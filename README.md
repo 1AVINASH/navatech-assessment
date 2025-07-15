@@ -1,5 +1,5 @@
 This project is hosted completely on docker. 
-* It uses fastApi for the backend framework and uvicorn for the server (which is based on the ASGI framework). For production builds, we will ideally spawn multiple workers (child processes, the routing is managed by uvicorn). 
+* It uses fastApi for the backend framework and uvicorn for the server (which is based on the ASGI framework). For production builds, we will ideally us gunicorn and spawn multiple workers (child processes, the routing is managed by gunicorn). 
 * It uses postgres as the backend Database
 
 ## Commands to run this
