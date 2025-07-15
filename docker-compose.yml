@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:15
+    container_name: navatech_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: postgres_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - navatech_net
+
+  backend:
+    build:
+      context: ./backend
+    container_name: navatech_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    environment:
+      - FLASK_ENV=development
+      - PORT=8000
+    depends_on:
+      - db
+    command: pipenv run python3 app.py  # Matches your bash script
+    networks:
+      - navatech_net
+
+volumes:
+  pgdata:
+
+networks:
+  navatech_net:
+    driver: bridge
