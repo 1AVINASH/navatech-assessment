@@ -1,6 +1,5 @@
 ## Pending Items
 * Add better error handling
-* Add jwt for authentication and get the required details from jwt
 * Add automated migrations for postgres
 * Add bloom filters for checking if an admin is already present with the given credentials when creating an admin
 * Add elastic search for extensive search capabilities

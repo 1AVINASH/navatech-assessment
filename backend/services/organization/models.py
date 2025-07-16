@@ -8,3 +8,7 @@ class Organization(BaseModel):
     id: Optional[int] = None
     name: OrganizationName
     admin_id: int
+
+class OrganizationSearchByName(BaseModel):
+    id: Optional[int] = None
+    name: OrganizationName

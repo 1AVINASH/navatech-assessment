@@ -6,9 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from constants.defaults import DEFAULT_HOST, DEFAULT_PORT
 from utility.middlewares import LoggingMiddleware
+from utility.logger import app_logger
 from services.organization.routes import organizations_router
 from services.admin.routes import admins_router
 from infra.postgres.setup import db
+from infra.elasticsearch.setup import initialize_es_client, close_es_client
 
 app = FastAPI(debug=True)
 
@@ -29,10 +31,12 @@ app.include_router(admins_router, prefix="/api")
 @app.on_event("startup")
 async def startup():
     await db.connect()
+    await initialize_es_client()
 
 @app.on_event("shutdown")
 async def shutdown():
     await db.disconnect()
+    await close_es_client()
 
 
 if __name__=="__main__":

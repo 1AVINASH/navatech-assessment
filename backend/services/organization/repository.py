@@ -4,14 +4,22 @@ from fastapi import HTTPException, status
 from asyncpg.exceptions import ForeignKeyViolationError, UniqueViolationError
 
 from infra.postgres.setup import db
+from infra.elasticsearch.setup import get_es_client
 
 from utility.logger import app_logger
 from services.organization.dtos.input import CreateOrganization, UpdateOrganization
 from services.organization.dtos.custom_types import OrganizationName
-from services.organization.models import Organization as OrganizationModel
+from services.organization.models import Organization as OrganizationModel, OrganizationSearchByName
 
 
 class Organization:
+    _es_client = None
+
+    async def get_client(self):
+        if self._es_client is None:
+            self._es_client = await get_es_client()
+        return self._es_client
+
     @staticmethod
     async def get_all_organizations()-> List[OrganizationModel]:
         query = "SELECT * FROM organization order by created_at"
@@ -64,3 +72,33 @@ class Organization:
 
         return data
     
+
+    # Elastic Search Queries start from here
+    async def search_organization_by_name(self, organization_name: str)->List[OrganizationSearchByName]:
+        client = await self.get_client()
+        app_logger.info(f"ES Client present {client}")
+        search_body = {
+            "query": {
+                "wildcard": {
+                    "name": f"*{organization_name}*"
+                }
+            },
+            "_source": ["id", "name"],
+            "size": 5,
+            "from": 0
+        }
+
+        es_response = await client.search(
+            index="organizations",
+            body=search_body
+        )
+
+        organizations = [
+            OrganizationSearchByName(
+                id=hit["_source"]["id"],
+                name=hit["_source"]["name"]
+            )
+            for hit in es_response["hits"]["hits"]
+        ]
+
+        return organizations

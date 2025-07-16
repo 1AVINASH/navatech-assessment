@@ -10,7 +10,7 @@ class LogLevels:
 class AppLogger:
     def __init__(self, name='app_logger', log_level=LogLevels.INFO):
         self.logger = logging.getLogger(name)
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(LogLevels.DEBUG)  # Set to DEBUG to capture all levels
 
         formatter = logging.Formatter(
             "[%(asctime)s] %(levelname)s - %(message)s", "%Y-%m-%d %H:%M:%S"
@@ -29,6 +29,7 @@ class AppLogger:
         self.logger.error(f"Traceback of the error {traceback.format_exc()}")
 
     def debug(self, msg): self.logger.debug(msg)
+    def fatal(self, msg): self.logger.fatal(msg)
 
     def get_logger(self): return self.logger
 

@@ -12,6 +12,8 @@ python-dotenv = "*"
 databases = "*"
 asyncpg = "*"
 pyjwt = "*"
+aiohttp = "*"
+elasticsearch = "8.13.2"
 
 [dev-packages]
 

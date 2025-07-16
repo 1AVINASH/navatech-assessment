@@ -13,6 +13,12 @@ services:
       - pgdata:/var/lib/postgresql/data
     networks:
       - navatech_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s       # Check every 5 seconds
+      timeout: 5s        # Give the command 5 seconds to respond
+      retries: 5         # Retry 5 times before marking as unhealthy
+      start_period: 10s  # Give the container 10 seconds to start up before checks begin
 
   backend:
     image: navatech_backend:latest
@@ -30,12 +36,94 @@ services:
       - PORT=8000
     depends_on:
       - db
+      - elasticsearch
     command: pipenv run python3 app.py  # Matches your bash script
     networks:
       - navatech_net
 
+  # --- Elasticsearch Service ---
+  elasticsearch:
+    image: elasticsearch:8.13.4 # Use a specific version, align with Kibana
+    container_name: elasticsearch
+    environment:
+      - xpack.security.enabled=false # For development, disable security
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m # Memory allocation (important!)
+      - ELASTIC_PASSWORD=testpassword # Default password if not set in .env
+    ulimits: # Important for Elasticsearch stability
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200" # REST API
+      - "9300:9300" # Node-to-node communication
+    depends_on:
+      - db
+    healthcheck: # Healthcheck for Elasticsearch
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cat/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - navatech_net
+    # Resource Constraints
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0' # Limit to 1 CPU core
+          memory: 1G  # Limit to 1GB RAM (ensure ES_JAVA_OPTS is lower than this)
+        reservations:
+          cpus: '0.5' # Reserve 0.5 CPU core
+          memory: 512M # Reserve 512MB RAM
+
+  # --- Kibana Service (Optional but very useful) ---
+  kibana:
+    image: kibana:8.13.4 # Align version with Elasticsearch
+    container_name: kibana
+    environment:
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]' # Connects to ES service name
+      ELASTICSEARCH_USERNAME: elasticuser
+      ELASTICSEARCH_PASSWORD: testpassword # Use the same password
+    ports:
+      - "5601:5601"
+    networks:
+      - navatech_net
+    depends_on:
+      elasticsearch:
+        condition: service_healthy # Wait for ES to be healthy
+
+  # --- Logstash Service (for data synchronization) ---
+  logstash:
+    image: logstash:8.13.4 # Align version with ES/Kibana
+    container_name: logstash
+    # command: logstash -f /usr/share/logstash/config/logstash.conf --config.reload.automatic
+    volumes:
+      - ./infra/logstash/config:/usr/share/logstash/config # Mount Logstash config
+      - ./infra/logstash/jdbc_driver:/usr/share/logstash/jdbc_driver # Mount JDBC driver
+    environment:
+      LS_JAVA_OPTS: "-Xms256m -Xmx256m" # Memory for Logstash
+    depends_on:
+      db:
+        condition: service_healthy # Wait for DB to be healthy
+      elasticsearch:
+        condition: service_healthy # Wait for ES to be healthy
+    networks:
+      - navatech_net
+    # Resource Constraints
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+
 volumes:
   pgdata:
+  es_data:
 
 networks:
   navatech_net:
