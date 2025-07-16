@@ -1,6 +1,7 @@
 from typing import List
 
-from asyncpg.exceptions import ForeignKeyViolationError
+from fastapi import HTTPException, status
+from asyncpg.exceptions import ForeignKeyViolationError, UniqueViolationError
 
 from infra.postgres.setup import db
 
@@ -37,6 +38,12 @@ class Organization:
             data.id = new_organization_id
         except ForeignKeyViolationError as e:
             raise ValueError(f"Admin with id {organization.admin_id} does not exist") from e
+        except UniqueViolationError:
+            # Catch the specific PostgreSQL unique constraint violation error
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT, # 409 Conflict is appropriate for this
+                detail=f"Organization with name '{organization.name}' already exists."
+            )
 
         return data
     

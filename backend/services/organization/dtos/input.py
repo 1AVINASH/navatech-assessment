@@ -7,7 +7,7 @@ from services.organization.dtos.custom_types import OrganizationName
 
 
 class CreateOrganization(BaseModel):
-    admin_id: int = Field(...)
+    admin_id: Optional[int] = None
     name: OrganizationName
 
 class UpdateOrganization(BaseModel):

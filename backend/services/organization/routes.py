@@ -1,9 +1,10 @@
 import os
 from typing import List, Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from utility.logger import app_logger
+from utility.authentication import verify_token
 from dtos.output import DefaultOutput
 
 from services.organization.models import Organization
@@ -14,12 +15,17 @@ from services.organization.repository import Organization as RepositoryOrganizat
 organizations_router = APIRouter(prefix="/organizations", tags=["organizations"])
 
 @organizations_router.get("", response_model=DefaultOutput)
-async def get():
+async def get(
+    token_payload: dict = Depends(verify_token)
+):
     data: List[Any] = await RepositoryOrganization.get_all_organizations()    
     return DefaultOutput(message=f"All organizations fetched successfully", data=data)
 
 @organizations_router.get("/by-name/{organization_name}", response_model=DefaultOutput)
-async def get(organization_name: OrganizationName):
+async def get(
+    organization_name: OrganizationName,
+    token_payload: dict = Depends(verify_token)
+):
     try:
         data = await RepositoryOrganization.get_organization_by_name(organization_name=organization_name)
     except Exception as e:
@@ -28,9 +34,14 @@ async def get(organization_name: OrganizationName):
     return DefaultOutput(message=f"Organization with name fetched successfully", data=data)
 
 @organizations_router.post("", response_model=DefaultOutput)
-async def create(payload: CreateOrganization):
+async def create(
+    payload: CreateOrganization,
+    token_payload: dict = Depends(verify_token)
+):
     app_logger.info(f"Received payload for creating organization: {payload}")
+    print(f"Token payload: {token_payload}")
     try:
+        payload.admin_id = token_payload.get("admin_id")  # Ensure admin_id is set from token
         data = await RepositoryOrganization.create_organization(payload)
     except Exception as e:
         app_logger.error(f"Error creating organization: {e}")
@@ -38,7 +49,10 @@ async def create(payload: CreateOrganization):
     return DefaultOutput(message=f"Organization Created successfully", data=data)
 
 @organizations_router.put("/{organization_id}", response_model=DefaultOutput)
-async def update(payload: UpdateOrganization):
+async def update(
+    payload: UpdateOrganization,
+    token_payload: dict = Depends(verify_token)
+):
     app_logger.info(f"Received payload for updating organization: {payload}")
     try:
         _ = await RepositoryOrganization.update_organization(payload)
@@ -47,7 +61,10 @@ async def update(payload: UpdateOrganization):
     return DefaultOutput(message=f"Organization Updated successfully", data=payload)
 
 @organizations_router.delete("/{organization_id}", response_model=DefaultOutput)
-async def delete(organization_id: int):
+async def delete(
+    organization_id: int,
+    token_payload: dict = Depends(verify_token)
+):
     '''
         Ideally this route would have safety checks to ensure that the organization is being deleted only by an admin or the owner
     '''

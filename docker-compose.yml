@@ -15,6 +15,7 @@ services:
       - navatech_net
 
   backend:
+    image: navatech_backend:latest
     build:
       context: ./backend
     container_name: navatech_backend
