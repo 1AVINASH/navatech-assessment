@@ -3,7 +3,6 @@ from typing import List, Any
 
 from fastapi import APIRouter, Depends
 
-from infra.elasticsearch.setup import get_es_client
 from utility.logger import app_logger
 from utility.authentication import verify_token
 from dtos.output import DefaultOutput
@@ -11,17 +10,15 @@ from dtos.output import DefaultOutput
 from services.organization.models import Organization
 from services.organization.dtos.input import CreateOrganization, UpdateOrganization
 from services.organization.dtos.custom_types import OrganizationName
-from services.organization.repository import Organization as OrganizationRepository
+from services.organization.manager import org_manager
 
 organizations_router = APIRouter(prefix="/organizations", tags=["organizations"])
-
-organization_repository = OrganizationRepository()
 
 @organizations_router.get("", response_model=DefaultOutput)
 async def get(
     token_payload: dict = Depends(verify_token)
 ):
-    data: List[Any] = await organization_repository.get_all_organizations()    
+    data: List[Any] = await org_manager.organization_repository.get_all_organizations()    
     return DefaultOutput(message=f"All organizations fetched successfully", data=data)
 
 @organizations_router.get("/by-name/{organization_name}", response_model=DefaultOutput)
@@ -30,7 +27,7 @@ async def get(
     token_payload: dict = Depends(verify_token)
 ):
     try:
-        data = await organization_repository.get_organization_by_name(organization_name=organization_name)
+        data = await org_manager.organization_repository.get_organization_by_name(organization_name=organization_name)
     except Exception as e:
         app_logger.error(f"Error fetching organization by name: {e}")
         return DefaultOutput(message=str(e), data=None, success=False)
@@ -42,7 +39,7 @@ async def search_by_name(
     # token_payload: dict = Depends(verify_token)
 ):
     try:
-        data = await organization_repository.search_organization_by_name(organization_name=organization_name)
+        data = await org_manager.organization_repository.search_organization_by_name(organization_name=organization_name)
     except Exception as e:
         app_logger.error(f"Error fetching organization by name: {e}")
         return DefaultOutput(message=str(e), data=None, success=False)
@@ -57,7 +54,7 @@ async def create(
     print(f"Token payload: {token_payload}")
     try:
         payload.admin_id = token_payload.get("admin_id")  # Ensure admin_id is set from token
-        data = await organization_repository.create_organization(payload)
+        data = await org_manager.organization_repository.create_organization(payload)
     except Exception as e:
         app_logger.error(f"Error creating organization: {e}")
         return DefaultOutput(message=str(e), data=None, success=False)
@@ -70,7 +67,7 @@ async def update(
 ):
     app_logger.info(f"Received payload for updating organization: {payload}")
     try:
-        _ = await organization_repository.update_organization(payload)
+        _ = await org_manager.organization_repository.update_organization(payload)
     except Exception as e:
         app_logger.error(f"Error updating organization: {e}")
     return DefaultOutput(message=f"Organization Updated successfully", data=payload)
@@ -84,5 +81,5 @@ async def delete(
         Ideally this route would have safety checks to ensure that the organization is being deleted only by an admin or the owner
     '''
     app_logger.info(f"Deleting organization for id {organization_id}")
-    await organization_repository.delete_organization(organization_id=organization_id)
+    await org_manager.organization_repository.delete_organization(organization_id=organization_id)
     return DefaultOutput(message=f"Organization Deleted successfully", data={"id": organization_id})

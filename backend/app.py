@@ -5,12 +5,22 @@ import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 
 from constants.defaults import DEFAULT_HOST, DEFAULT_PORT
+
+# Utility
 from utility.middlewares import LoggingMiddleware
 from utility.logger import app_logger
+
+# Infra
+from infra.postgres.setup import db_cli
+from infra.elasticsearch.setup import es_cli
+
+## Managers
+from services.organization.manager import org_manager
+from services.admin.manager import admin_manager
+
+## Routes
 from services.organization.routes import organizations_router
 from services.admin.routes import admins_router
-from infra.postgres.setup import db
-from infra.elasticsearch.setup import initialize_es_client, close_es_client
 
 app = FastAPI(debug=True)
 
@@ -24,19 +34,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add routes
-app.include_router(organizations_router, prefix="/api")
-app.include_router(admins_router, prefix="/api")
-
 @app.on_event("startup")
 async def startup():
-    await db.connect()
-    await initialize_es_client()
+    # Initialize infra
+    await db_cli.initialize()
+    await es_cli.initialize()
+
+    # Initialize Managers
+    await org_manager.initialize()
+    await admin_manager.initialize()
 
 @app.on_event("shutdown")
 async def shutdown():
-    await db.disconnect()
-    await close_es_client()
+    await db_cli.disconnect()
+    await es_cli.close()
+
+# Add routes
+app.include_router(organizations_router, prefix="/api")
+app.include_router(admins_router, prefix="/api")
 
 
 if __name__=="__main__":

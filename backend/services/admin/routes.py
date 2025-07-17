@@ -8,18 +8,19 @@ from dtos.output import DefaultOutput
 
 from services.admin.models import Admin as AdminModel
 from services.admin.dtos.input import CreateAdmin, Login, UpdateAdmin
-from services.admin.repository import Admin as RepositoryAdmin
+from services.admin.repository import Admin as AdminRepository
+from services.admin.manager import admin_manager
 
 admins_router = APIRouter(prefix="/admins", tags=["admins"])
 
 @admins_router.get("", response_model=DefaultOutput)
 async def get():
-    data: List[Any] = await RepositoryAdmin.get_all_admins()    
+    data: List[Any] = await admin_manager.repository.get_all_admins()    
     return DefaultOutput(message=f"admins fetched successfully", data=data)
 
 @admins_router.post("/login", response_model=DefaultOutput)
 async def login(payload: Login):
-    data = await RepositoryAdmin.get_admin_by_email_and_password(
+    data = await admin_manager.repository.get_admin_by_email_and_password(
         AdminModel(
             email=payload.email,
             password=payload.password
@@ -42,7 +43,7 @@ async def create(
     payload: CreateAdmin,
 ):
     app_logger.info(f"Received payload for creating admin: {payload}")
-    data = await RepositoryAdmin.create_admin(
+    data = await admin_manager.repository.create_admin(
         AdminModel(
             email=payload.email,
             password=payload.password
@@ -57,7 +58,7 @@ async def update(
     token_payload: dict = Depends(verify_token)
 ):
     app_logger.info(f"Received payload for updating admin: {payload}")
-    _ = await RepositoryAdmin.update_admin(
+    _ = await admin_manager.repository.update_admin(
         AdminModel(
             id=admin_id,
             email=payload.email,
@@ -69,5 +70,5 @@ async def update(
 @admins_router.delete("/{admin_id}", response_model=DefaultOutput)
 async def delete(admin_id: int):
     app_logger.info(f"Deleting Admin for id {admin_id}")
-    data = await RepositoryAdmin.delete_admin(admin_id=admin_id)
+    data = await admin_manager.repository.delete_admin(admin_id=admin_id)
     return DefaultOutput(message=f"Admin Deleted successfully", data={"id": admin_id})

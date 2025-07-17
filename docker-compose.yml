@@ -101,6 +101,7 @@ services:
     # command: logstash -f /usr/share/logstash/config/logstash.conf --config.reload.automatic
     volumes:
       - ./infra/logstash/config:/usr/share/logstash/config # Mount Logstash config
+      - ./infra/logstash/templates:/usr/share/logstash/templates # Mount Logstash templates
       - ./infra/logstash/jdbc_driver:/usr/share/logstash/jdbc_driver # Mount JDBC driver
       - logstash_data:/usr/share/logstash/data # <--- This is essential for persistence
     environment:
