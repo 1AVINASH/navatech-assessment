@@ -102,6 +102,7 @@ services:
     volumes:
       - ./infra/logstash/config:/usr/share/logstash/config # Mount Logstash config
       - ./infra/logstash/jdbc_driver:/usr/share/logstash/jdbc_driver # Mount JDBC driver
+      - logstash_data:/usr/share/logstash/data # <--- This is essential for persistence
     environment:
       LS_JAVA_OPTS: "-Xms256m -Xmx256m" # Memory for Logstash
     depends_on:
@@ -124,6 +125,7 @@ services:
 volumes:
   pgdata:
   es_data:
+  logstash_data:
 
 networks:
   navatech_net:

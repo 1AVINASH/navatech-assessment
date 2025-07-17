@@ -9,3 +9,6 @@ This project is hosted completely on docker.
     * To see all tables, use `\d`
 * To check live logs of a container, use `docker compose logs -f <service_name>`
 * To check the auto generated swagger docs, go to `http://localhost:8000/docs`. This assumes your local port 8000 is mapped for the fastapi service. If not, just replace the port 8000 with the port mapped in docker-compose
+* It also runs elasticsearch, kibana and logstash
+* Kibana can be run locally by going to http://localhost:5601 (Replace 5601 with the port it's hosted on)
+* Logstash is used to periodically update elastic search by polling postgres for changes
