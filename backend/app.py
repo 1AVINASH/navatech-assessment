@@ -13,6 +13,7 @@ from utility.logger import app_logger
 # Infra
 from infra.postgres.setup import db_cli
 from infra.elasticsearch.setup import es_cli
+from infra.redis.setup import redis_service
 
 ## Managers
 from services.organization.manager import org_manager
@@ -39,6 +40,7 @@ async def startup():
     # Initialize infra
     await db_cli.initialize()
     await es_cli.initialize()
+    await redis_service.initialize()
 
     # Initialize Managers
     await org_manager.initialize()

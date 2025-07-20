@@ -2,21 +2,13 @@ import os
 from dotenv import load_dotenv
 
 from elasticsearch import AsyncElasticsearch
+from utility.logger import app_logger
+
 load_dotenv()
 
 ELASTICSEARCH_URL = os.getenv("ELASTICSEARCH_URL")
 ELASTICSEARCH_USER = os.getenv("ELASTICSEARCH_USER")
 ELASTICSEARCH_PASSWORD = os.getenv("ELASTICSEARCH_PASSWORD")
-
-from utility.logger import app_logger
-# Global variable to hold the Elasticsearch client instance
-# It will be initialized during the application startup event
-
-import os
-from dotenv import load_dotenv
-from utility.logger import app_logger
-
-load_dotenv()
 
 class ElasticsearchClient:
     _instance = None

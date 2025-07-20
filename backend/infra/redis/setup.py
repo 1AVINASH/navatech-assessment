@@ -1,7 +1,10 @@
 import os
+from typing import Optional
+
 from dotenv import load_dotenv
 import redis.asyncio as redis
-from typing import Optional
+
+from utility.logger import app_logger
 
 load_dotenv()
 
@@ -14,13 +17,15 @@ class RedisService:
         self._db: int = int(os.getenv("REDIS_DB", 0))
 
     async def initialize(self):
+        app_logger.info(f"Connecting to Redis at url: {self._host}:{self._port}")
         if self._redis is None:
             self._redis = redis.Redis(
                 host=self._host,
                 port=self._port,
                 db=self._db,
-                decode_responses=True
+                decode_responses=False
             )
+        app_logger.info(f"Connected to Redis at url: {self._host}:{self._port}")
 
     @property
     def redis(self) -> redis.Redis:

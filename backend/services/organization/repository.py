@@ -1,3 +1,4 @@
+import pickle
 from typing import List, Self
 
 from fastapi import HTTPException, status
@@ -5,6 +6,7 @@ from asyncpg.exceptions import ForeignKeyViolationError, UniqueViolationError
 
 from infra.postgres.setup import db_cli
 from infra.elasticsearch.setup import es_cli
+from infra.redis.setup import redis_service
 
 from utility.logger import app_logger
 from services.organization.dtos.input import CreateOrganization, UpdateOrganization
@@ -15,7 +17,10 @@ from services.organization.models import Organization as OrganizationModel, Orga
 class Organization:
     _es_client = None
     _db = None
+    _cache = None
     _instance: Self = None
+    BLOOM_REDIS_ORG_NAME_KEY = "bloom:org_name"
+
 
     def __new__(cls):
         if cls._instance is None:
@@ -28,6 +33,8 @@ class Organization:
             self._es_client = await es_cli.get_client()
         if self._db is None:
             self._db = db_cli.db
+        if self._cache is None:
+            self._cache = redis_service.redis
 
     async def get_all_organizations(self)-> List[OrganizationModel]:
         query = "SELECT * FROM organization order by created_at"
@@ -41,7 +48,7 @@ class Organization:
         values = {"name": organization_name}
         data = await self._db.fetch_one(query, values=values)
 
-        return OrganizationModel(**data)
+        return OrganizationModel(**data) if data else None
     
     async def create_organization(self, organization: CreateOrganization)->OrganizationModel:
         query = "INSERT INTO organization (name, admin_id) VALUES (:name, :admin_id) returning id"
@@ -105,3 +112,14 @@ class Organization:
         ]
 
         return organizations
+    
+    async def set_org_name_filter_in_cache(self, org_name_filter):
+        await self._cache.set(self.BLOOM_REDIS_ORG_NAME_KEY, pickle.dumps(org_name_filter))
+
+        return {"message": "Value set"}
+    
+    async def get_org_name_filter_in_cache(self):
+        data_pickle = await self._cache.get(self.BLOOM_REDIS_ORG_NAME_KEY)
+        data = pickle.loads(data_pickle) if data_pickle else None
+
+        return data

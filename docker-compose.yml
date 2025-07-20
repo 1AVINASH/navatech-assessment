@@ -32,14 +32,25 @@ services:
       - ./backend:/app
     working_dir: /app
     environment:
-      - FLASK_ENV=development
       - PORT=8000
+      - TZ=Asia/Kolkata # Set the timezone to IST
     depends_on:
       - db
       - elasticsearch
     command: pipenv run python3 app.py  # Matches your bash script
     networks:
       - navatech_net
+  
+  redis:
+    image: redis:7.2-alpine
+    container_name: navatech_cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - navatech_net
+    restart: unless-stopped
 
   # --- Elasticsearch Service ---
   elasticsearch:
@@ -50,6 +61,7 @@ services:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms512m -Xmx512m # Memory allocation (important!)
       - ELASTIC_PASSWORD=testpassword # Default password if not set in .env
+      - ELASTIC_USERNAME=elasticuser 
     ulimits: # Important for Elasticsearch stability
       memlock:
         soft: -1
@@ -127,6 +139,7 @@ volumes:
   pgdata:
   es_data:
   logstash_data:
+  redis_data:
 
 networks:
   navatech_net:

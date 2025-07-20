@@ -1,5 +1,3 @@
 ## Pending Items
 * Add better error handling
 * Add automated migrations for postgres
-* Add bloom filters for checking if an admin is already present with the given credentials when creating an admin
-* Make DB and ElasticSearch singleton

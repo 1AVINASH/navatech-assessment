@@ -11,12 +11,6 @@ class DatabaseClient:
         self._db = None
         self._initialized = False
 
-    @classmethod
-    def get_instance(cls):
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
-
     async def initialize(self):
         if not self._initialized:
             DB_USER = os.getenv("DB_USER")
