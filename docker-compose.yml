@@ -45,7 +45,7 @@ services:
     image: postgres:15
     container_name: pg_backup
     depends_on:
-      - postgres
+      - db
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |

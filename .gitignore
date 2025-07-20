@@ -1,4 +1,4 @@
 **.env
 **__pycache__**
 **nohup.out**
-backups/pg_backups/** */
+backups/pg_backups/*.dump
