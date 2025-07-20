@@ -1,25 +1,4 @@
 services:
-  db:
-    image: postgres:15
-    container_name: navatech_db
-    restart: always
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: secret
-      POSTGRES_DB: postgres_db
-    ports:
-      - "5434:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    networks:
-      - navatech_net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
-      interval: 5s       # Check every 5 seconds
-      timeout: 5s        # Give the command 5 seconds to respond
-      retries: 5         # Retry 5 times before marking as unhealthy
-      start_period: 10s  # Give the container 10 seconds to start up before checks begin
-
   backend:
     image: navatech_backend:latest
     build:
@@ -40,6 +19,45 @@ services:
     command: pipenv run python3 app.py  # Matches your bash script
     networks:
       - navatech_net
+  
+  db:
+    image: postgres:15
+    container_name: navatech_db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: postgres_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - navatech_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s       # Check every 5 seconds
+      timeout: 5s        # Give the command 5 seconds to respond
+      retries: 5         # Retry 5 times before marking as unhealthy
+      start_period: 10s  # Give the container 10 seconds to start up before checks begin
+  
+  pg_backup:
+    image: postgres:15
+    container_name: pg_backup
+    depends_on:
+      - postgres
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        mkdir -p /backups &&
+        while true; do
+          pg_dump -h postgres -U admin -F c -d postgres_db > /backups/backup_$(date +%Y%m%d_%H%M%S).dump;
+          sleep 86400;
+        done
+    environment:
+      PGPASSWORD: secret
+    volumes:
+      - ./backups/pg_backups:/backups
   
   redis:
     image: redis:7.2-alpine
